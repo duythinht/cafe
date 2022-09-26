@@ -34,3 +34,7 @@ deleting 0x7e6.com   TXT     1     just-txt.0x7e6.com      hello-world!...
 creating 0x7e6.com   A       1     hello.0x7e6.com         104.21.13.167... true
 creating 0x7e6.com   TXT     1     just-txt.0x7e6.com      ok-hello-world!... true
 ```
+
+### Why not terraform
+
+Cause tf is too slow, it's terrible.
