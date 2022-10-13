@@ -13,6 +13,6 @@ local record = function(zone_name, name, content, type='A', proxied=true, ttl=1,
         a(name, ip, proxied=true, ttl=1):: record(zone_name, name, ip, type='A', proxied=proxied, ttl=ttl),
         cname(name, domain, proxied=true, ttl=1):: record(zone_name, name, domain, type='CNAME', proxied=proxied, ttl=ttl),
         txt(name, content):: record(zone_name, name, content, type='TXT', proxied=false, ttl=1),
-        mx(name, content, priority=100):: record(zone_name, name, content, type='MX', proxied=false, ttl=1, priority=priority),
+        mx(name, content, priority=10):: record(zone_name, name, content, type='MX', proxied=false, ttl=1, priority=priority),
     }
 }

@@ -80,6 +80,13 @@ func main() {
 				return err
 			}
 
+			for _, record := range records {
+				if _, ok := zoneIds[record.ZoneName]; !ok {
+					fmt.Printf("Error at %s\nZone `%s` is not managed by cafe! Is it corrected?\n", path, record.ZoneName)
+					os.Exit(1)
+				}
+			}
+
 			dfRecords = append(dfRecords, records...)
 
 		}
@@ -159,6 +166,7 @@ func main() {
 
 		for _, record := range adding {
 			fmt.Printf("creating %-12s%-8s%-6d%-24s%s... ", record.ZoneName, record.Type, record.TTL, record.Name, record.Content)
+
 			res, err := api.CreateDNSRecord(ctx, zoneIds[record.ZoneName], record)
 			if err != nil {
 				log.Fatal(err)
