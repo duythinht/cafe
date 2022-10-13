@@ -24,6 +24,7 @@ jobs:
       env:
         CLOUDFLARE_API_TOKEN: ${{secrets.CLOUDFLARE_API_TOKEN}}
       with:
+        github-token: ${{secrets.GITHUB_TOKEN}}
         script: |
           let out = '';
           const options = {
@@ -44,7 +45,7 @@ jobs:
             console.error(e)
             planStatus = 'FAILED'
           }
-          let body = `### Records Plan:\n<details><summary>Status: ${planStatus}</summary>\n\n\`\`\`\n${out}\n\`\`\`\n</details>`
+          let body = `### Cafe Plan:\n<details><summary>Status: ${planStatus}</summary>\n\n\`\`\`\n${out}\n\`\`\`\n</details>`
           await github.rest.issues.createComment({
             issue_number: context.payload.pull_request.number,
             owner: context.repo.owner,
