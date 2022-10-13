@@ -2,7 +2,7 @@
 
 local cafe = import 'cafe.libsonnet';
 
-local records = cafe.zone('0x7e6.com');
+local records = cafe.zone('0x7e6.come');
 
 [
     records.a('hello.0x7e6.com', '104.20.13.167', ttl=1),
