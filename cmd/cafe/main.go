@@ -135,18 +135,18 @@ func main() {
 	if len(deleting) > 0 {
 		fmt.Printf("Those records will be deleted:\n")
 
-		fmt.Printf("%-12s%-8s%-6s%-24s%s\n", "ZONE", "TYPE", "TTL", "NAME", "CONTENT")
+		fmt.Printf("%-12s%-8s%-6s%-24s%-20s%s\n", "ZONE", "TYPE", "TTL", "NAME", "CONTENT", "PROXY")
 		for _, record := range deleting {
-			fmt.Printf("%-12s%-8s%-6d%-24s%s\n", record.ZoneName, record.Type, record.TTL, record.Name, record.Content)
+			fmt.Printf("%-12s%-8s%-6d%-24s%-20s%v\n", record.ZoneName, record.Type, record.TTL, record.Name, record.Content, *record.Proxied)
 		}
 	}
 
 	if len(adding) > 0 {
 		fmt.Printf("\nThose records will be created:\n")
 
-		fmt.Printf("%-12s%-8s%-6s%-24s%s\n", "ZONE", "TYPE", "TTL", "NAME", "CONTENT")
+		fmt.Printf("%-12s%-8s%-6s%-24s%s-10s%s\n", "ZONE", "TYPE", "TTL", "NAME", "CONTENT", "PROXY")
 		for _, record := range adding {
-			fmt.Printf("%-12s%-8s%-6d%-24s%s\n", record.ZoneName, record.Type, record.TTL, record.Name, record.Content)
+			fmt.Printf("%-12s%-8s%-6d%-24s%-20s%v\n", record.ZoneName, record.Type, record.TTL, record.Name, record.Content, *record.Proxied)
 		}
 	}
 
@@ -184,7 +184,7 @@ func hash(r cloudflare.DNSRecord) string {
 	if r.Type == "MX" {
 		s = md5.Sum([]byte(fmt.Sprintf("%s-%s-%d-%s-%s-%d", r.ZoneName, r.Type, r.TTL, r.Name, r.Content, *r.Priority)))
 	} else {
-		s = md5.Sum([]byte(fmt.Sprintf("%s-%s-%d-%s-%s", r.ZoneName, r.Type, r.TTL, r.Name, r.Content)))
+		s = md5.Sum([]byte(fmt.Sprintf("%s-%s-%d-%s-%s-%v", r.ZoneName, r.Type, r.TTL, r.Name, r.Content, *r.Proxied)))
 	}
 
 	return hex.EncodeToString(s[:])
