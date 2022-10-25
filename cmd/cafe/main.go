@@ -183,8 +183,10 @@ func hash(r cloudflare.DNSRecord) string {
 
 	if r.Type == "MX" {
 		s = md5.Sum([]byte(fmt.Sprintf("%s-%s-%d-%s-%s-%d", r.ZoneName, r.Type, r.TTL, r.Name, r.Content, *r.Priority)))
-	} else {
+	} else if r.Type == "A" || r.Type == "CNAME" {
 		s = md5.Sum([]byte(fmt.Sprintf("%s-%s-%d-%s-%s-%v", r.ZoneName, r.Type, r.TTL, r.Name, r.Content, *r.Proxied)))
+	} else {
+		s = md5.Sum([]byte(fmt.Sprintf("%s-%s-%d-%s-%s", r.ZoneName, r.Type, r.TTL, r.Name, r.Content)))
 	}
 
 	return hex.EncodeToString(s[:])
