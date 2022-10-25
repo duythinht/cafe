@@ -98,6 +98,8 @@ func main() {
 		log.Fatalf("walk dir error %s", err)
 	}
 
+	cnames := SetOf[string]()
+
 	managed := SetOf[string]()
 	stored := SetOf[string]()
 
@@ -113,6 +115,12 @@ func main() {
 
 	for _, record := range dfRecords {
 		defined.Add(hash(record))
+		if record.Type == "CNAME" {
+			if cnames.Has(record.Name) {
+				log.Fatalf("ERROR: cname is duplicated: %s", record.Name)
+			}
+			cnames.Add(record.Name)
+		}
 	}
 
 	for _, record := range cfRecords {
