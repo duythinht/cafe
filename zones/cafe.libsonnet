@@ -1,6 +1,6 @@
 local record = function(zone_name, name, content, type='A', proxied=true, ttl=1, priority=null) {
     zone_name: zone_name,
-    name: if std.endsWith(name, zone_name) then name else name + '.' + zone_name,
+    name: if std.endsWith(name, zone_name) then std.asciiLower(name) else std.asciiLower(name + '.' + zone_name),
     content: content,
     type: type,
     proxied: proxied,
