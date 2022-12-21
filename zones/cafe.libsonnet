@@ -1,7 +1,7 @@
 local record = function(zone_name, name, content, type='A', proxied=true, ttl=1, priority=null) {
     zone_name: zone_name,
     name: if std.endsWith(name, zone_name) then std.asciiLower(name) else std.asciiLower(name + '.' + zone_name),
-    content: if type == 'CNAME' std.asciiLower(content) else content,
+    content: if type == 'CNAME' then std.asciiLower(content) else content,
     type: type,
     proxied: proxied,
     [if type == "MX" then "priority" else null]: priority,
