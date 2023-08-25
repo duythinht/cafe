@@ -5,5 +5,5 @@ local cafe = import 'cafe.libsonnet';
 local records = cafe.zone('0x97a.com');
 
 [
-    records.a('test-lb.0x97a.com', '104.20.13.167', ttl=1, proxied=false),
+    records.a('test-lb.0x97a.com', '34.160.220.95', ttl=1, proxied=false),
 ]
