@@ -14,5 +14,6 @@ local record = function(zone_name, name, content, type='A', proxied=true, ttl=1,
         cname(name, domain, proxied=true, ttl=1):: record(zone_name, name, domain, type='CNAME', proxied=proxied, ttl=ttl),
         txt(name, content):: record(zone_name, name, content, type='TXT', proxied=false, ttl=1),
         mx(name, content, priority=10):: record(zone_name, name, content, type='MX', proxied=false, ttl=1, priority=priority),
+        deprecated(name):: record(zone_name, name, content='', type="DEPRECATED")
     }
 }
