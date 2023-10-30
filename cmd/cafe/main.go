@@ -30,7 +30,6 @@ func main() {
 	ctx := context.Background()
 
 	zones, err := api.ListZones(ctx)
-
 	if err != nil {
 		log.Fatalf("get zones: %s", err)
 	}
@@ -48,7 +47,7 @@ func main() {
 			log.Fatalf("get record for zone %s: %s", zone.Name, err)
 		}
 
-		cfRecords = append(cfRecords, records...)
+		cfRecords = append(cfRecords, records...) // Get All Records
 	}
 
 	vm := jsonnet.MakeVM()
@@ -59,13 +58,11 @@ func main() {
 	if zoneRoot == "" {
 		zoneRoot = "./zones"
 	}
-
 	err = filepath.Walk(zoneRoot, func(path string, info fs.FileInfo, err error) error {
 
 		if info.IsDir() {
 			return nil
 		}
-
 		if strings.HasSuffix(path, ".jsonnet") {
 			jsonData, err := vm.EvaluateFile(path)
 			if err != nil {
@@ -103,31 +100,34 @@ func main() {
 	managed := SetOf[string]()
 	stored := SetOf[string]()
 
-	//
 	deleting := make([]cloudflare.DNSRecord, 0)
 	adding := make([]cloudflare.DNSRecord, 0)
 
 	defined := SetOf[string]()
+	deprecate := SetOf[string]()
 
 	for _, record := range dfRecords {
 		managed.Add(nt(record))
 	}
 
 	for _, record := range dfRecords {
-		defined.Add(hash(record))
 		if record.Type == "CNAME" {
 			if cnames.Has(record.Name) {
 				log.Fatalf("ERROR: cname is duplicated: %s", record.Name)
 			}
 			cnames.Add(record.Name)
+			defined.Add(hash(record))
+		} else if record.Type == "DEPRECATED" {
+			deprecate.Add(record.Name)
+		} else {
+			defined.Add(hash(record))
 		}
 	}
 
 	for _, record := range cfRecords {
 		if managed.Has(nt(record)) {
 			h := hash(record)
-
-			if !defined.Has(h) {
+			if !defined.Has(h) || deprecate.Has(record.Name) {
 				deleting = append(deleting, record)
 			}
 			stored.Add(h)
@@ -135,8 +135,10 @@ func main() {
 	}
 
 	for _, record := range dfRecords {
-		if !stored.Has(hash(record)) {
-			adding = append(adding, record)
+		if record.Type != "DEPRECATED" {
+			if !stored.Has(hash(record)) {
+				adding = append(adding, record)
+			}
 		}
 	}
 
@@ -191,7 +193,7 @@ func hash(r cloudflare.DNSRecord) string {
 
 	if r.Type == "MX" {
 		s = md5.Sum([]byte(fmt.Sprintf("%s-%s-%d-%s-%s-%d", r.ZoneName, r.Type, r.TTL, r.Name, r.Content, *r.Priority)))
-	} else if r.Type == "A" || r.Type == "CNAME" {
+	} else if r.Type == "A" || r.Type == "CNAME" || r.Type == "DEPRECATED" {
 		s = md5.Sum([]byte(fmt.Sprintf("%s-%s-%d-%s-%s-%v", r.ZoneName, "X", r.TTL, r.Name, r.Content, *r.Proxied)))
 	} else {
 		s = md5.Sum([]byte(fmt.Sprintf("%s-%s-%d-%s-%s", r.ZoneName, r.Type, r.TTL, r.Name, r.Content)))
@@ -201,7 +203,7 @@ func hash(r cloudflare.DNSRecord) string {
 }
 
 func nt(r cloudflare.DNSRecord) string {
-	if r.Type == "A" || r.Type == "CNAME" {
+	if r.Type == "A" || r.Type == "CNAME" || r.Type == "DEPRECATED" {
 		return fmt.Sprintf("%s-X", r.Name)
 	}
 	return fmt.Sprintf("%s-%s", r.Name, r.Type)
