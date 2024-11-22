@@ -1,4 +1,4 @@
-module github.com/duythinht/cafe
+module github.com/namcxn/cafe
 
 go 1.19
 
