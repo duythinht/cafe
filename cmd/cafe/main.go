@@ -77,9 +77,15 @@ func main() {
 			}
 
 			for _, record := range records {
-				zoneName := strings.Split(record.Name, ".")[1] + "." + strings.Split(record.Name, ".")[2]
+				// Extract the correct zone name
+				parts := strings.Split(record.Name, ".")
+				if len(parts) < 2 {
+					fmt.Printf("\nError at %s\nInvalid record name `%s`\n", path, record.Name)
+					os.Exit(1)
+				}
+				zoneName := strings.Join(parts[len(parts)-2:], ".")
 				if _, ok := zoneIds[zoneName]; !ok {
-					fmt.Printf("Error at %s\nZone `%s` is not managed by cafe! Is it corrected?\n", path, zoneName)
+					fmt.Printf("\nError at %s\nZone `%s` is not managed by cafe! Is it corrected?\n", path, zoneName)
 					os.Exit(1)
 				}
 			}
@@ -154,9 +160,9 @@ func main() {
 	if len(adding) > 0 {
 		fmt.Printf("\nThose records will be created:\n")
 
-		fmt.Printf("%-20s%-8s%-6s%-40s%-20s%s\n", "ZONE", "TYPE", "TTL", "NAME", "CONTENT", "PROXY")
+		fmt.Printf("%-20s%-8s%-6s%-40s%-40s%s\n", "ZONE", "TYPE", "TTL", "NAME", "CONTENT", "PROXY")
 		for _, record := range adding {
-			fmt.Printf("%-20s%-8s%-6d%-40s%-20s%v\n", getZoneName(record), record.Type, record.TTL, record.Name, record.Content, *record.Proxied)
+			fmt.Printf("%-20s%-8s%-6d%-40s%-40s%v\n", getZoneName(record), record.Type, record.TTL, record.Name, record.Content, *record.Proxied)
 		}
 	}
 
