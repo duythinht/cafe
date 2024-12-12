@@ -21,6 +21,7 @@ on:
 
 jobs:
   golang:
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         goos: [linux, darwin]
