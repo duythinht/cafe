@@ -1,2 +1,5 @@
 .envrc
 .idea
+.cafe
+*0x*.com.jsonnet
+.env
