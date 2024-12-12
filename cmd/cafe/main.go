@@ -41,8 +41,7 @@ func main() {
 	for _, zone := range zones {
 		zoneIds[zone.Name] = zone.ID
 
-		records, err := api.DNSRecords(ctx, zone.ID, cloudflare.DNSRecord{})
-
+		records, _, err := api.ListDNSRecords(ctx, cloudflare.ZoneIdentifier(zone.ID), cloudflare.ListDNSRecordsParams{})
 		if err != nil {
 			log.Fatalf("get record for zone %s: %s", zone.Name, err)
 		}
@@ -78,8 +77,9 @@ func main() {
 			}
 
 			for _, record := range records {
-				if _, ok := zoneIds[record.ZoneName]; !ok {
-					fmt.Printf("Error at %s\nZone `%s` is not managed by cafe! Is it corrected?\n", path, record.ZoneName)
+				zoneName := strings.Split(record.Name, ".")[1] + "." + strings.Split(record.Name, ".")[2]
+				if _, ok := zoneIds[zoneName]; !ok {
+					fmt.Printf("Error at %s\nZone `%s` is not managed by cafe! Is it corrected?\n", path, zoneName)
 					os.Exit(1)
 				}
 			}
@@ -147,7 +147,7 @@ func main() {
 
 		fmt.Printf("%-12s%-8s%-6s%-24s%-20s%s\n", "ZONE", "TYPE", "TTL", "NAME", "CONTENT", "PROXY")
 		for _, record := range deleting {
-			fmt.Printf("%-12s%-8s%-6d%-24s%-20s%v\n", record.ZoneName, record.Type, record.TTL, record.Name, record.Content, *record.Proxied)
+			fmt.Printf("%-12s%-8s%-6d%-24s%-20s%v\n", getZoneName(record), record.Type, record.TTL, record.Name, record.Content, *record.Proxied)
 		}
 	}
 
@@ -156,7 +156,7 @@ func main() {
 
 		fmt.Printf("%-12s%-8s%-6s%-24s%s-10s%s\n", "ZONE", "TYPE", "TTL", "NAME", "CONTENT", "PROXY")
 		for _, record := range adding {
-			fmt.Printf("%-12s%-8s%-6d%-24s%-20s%v\n", record.ZoneName, record.Type, record.TTL, record.Name, record.Content, *record.Proxied)
+			fmt.Printf("%-12s%-8s%-6d%-24s%-20s%v\n", getZoneName(record), record.Type, record.TTL, record.Name, record.Content, *record.Proxied)
 		}
 	}
 
@@ -167,21 +167,28 @@ func main() {
 		}
 
 		for _, record := range deleting {
-			fmt.Printf("deleting %-12s%-8s%-6d%-24s%s...\n", record.ZoneName, record.Type, record.TTL, record.Name, record.Content)
-			err := api.DeleteDNSRecord(ctx, zoneIds[record.ZoneName], record.ID)
+			fmt.Printf("deleting %-12s%-8s%-6d%-24s%s...\n", getZoneName(record), record.Type, record.TTL, record.Name, record.Content)
+			err := api.DeleteDNSRecord(ctx, cloudflare.ZoneIdentifier(zoneIds[getZoneName(record)]), record.ID)
 			if err != nil {
 				log.Fatal(err)
 			}
 		}
 
 		for _, record := range adding {
-			fmt.Printf("creating %-12s%-8s%-6d%-24s%s... ", record.ZoneName, record.Type, record.TTL, record.Name, record.Content)
+			fmt.Printf("creating %-12s%-8s%-6d%-24s%s... ", getZoneName(record), record.Type, record.TTL, record.Name, record.Content)
 
-			res, err := api.CreateDNSRecord(ctx, zoneIds[record.ZoneName], record)
+			res, err := api.CreateDNSRecord(ctx, cloudflare.ZoneIdentifier(zoneIds[getZoneName(record)]), cloudflare.CreateDNSRecordParams{
+				Type:     record.Type,
+				Name:     record.Name,
+				Content:  record.Content,
+				TTL:      record.TTL,
+				Priority: record.Priority,
+				Proxied:  record.Proxied,
+			})
 			if err != nil {
 				log.Fatal(err)
 			}
-			fmt.Printf("%v\n", res.Success)
+			fmt.Printf("%v\n", res)
 		}
 	}
 
@@ -192,11 +199,11 @@ func hash(r cloudflare.DNSRecord) string {
 	var s [16]byte
 
 	if r.Type == "MX" {
-		s = md5.Sum([]byte(fmt.Sprintf("%s-%s-%d-%s-%s-%d", r.ZoneName, r.Type, r.TTL, r.Name, r.Content, *r.Priority)))
+		s = md5.Sum([]byte(fmt.Sprintf("%s-%s-%d-%s-%s-%d", getZoneName(r), r.Type, r.TTL, r.Name, r.Content, *r.Priority)))
 	} else if r.Type == "A" || r.Type == "CNAME" || r.Type == "DEPRECATED" {
-		s = md5.Sum([]byte(fmt.Sprintf("%s-%s-%d-%s-%s-%v", r.ZoneName, "X", r.TTL, r.Name, r.Content, *r.Proxied)))
+		s = md5.Sum([]byte(fmt.Sprintf("%s-%s-%d-%s-%s-%v", getZoneName(r), "X", r.TTL, r.Name, r.Content, *r.Proxied)))
 	} else {
-		s = md5.Sum([]byte(fmt.Sprintf("%s-%s-%d-%s-%s", r.ZoneName, r.Type, r.TTL, r.Name, r.Content)))
+		s = md5.Sum([]byte(fmt.Sprintf("%s-%s-%d-%s-%s", getZoneName(r), r.Type, r.TTL, r.Name, r.Content)))
 	}
 
 	return hex.EncodeToString(s[:])
@@ -226,4 +233,12 @@ func (s Set[T]) Add(item T) bool {
 func (s Set[T]) Has(item T) bool {
 	_, ok := s[item]
 	return ok
+}
+
+func getZoneName(record cloudflare.DNSRecord) string {
+	parts := strings.Split(record.Name, ".")
+	if len(parts) < 2 {
+		return record.Name
+	}
+	return strings.Join(parts[len(parts)-2:], ".")
 }
