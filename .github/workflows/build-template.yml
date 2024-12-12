@@ -1,0 +1,56 @@
+on:
+  workflow_call:
+    inputs:
+      go_version:
+        description: "The Go version to download (if necessary) and use."
+        required: true
+        type: string
+      go_check_latest:
+        description: "The action first checks if the cached version is the latest one."
+        required: false
+        type: string
+      go_cache:
+        description: "Caching and restoring go modules and build outputs."
+        required: false
+        type: string
+      working_directory:
+        description: 'directory path'
+        required: false
+        type: string
+        default: "."
+
+jobs:
+  golang:
+    strategy:
+      matrix:
+        goos: [linux, darwin]
+        goarch: [amd64, arm64]
+
+    steps:
+
+      - name: "Checkout Repo"
+        uses: "actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11" #v3.1.0
+
+      - name: "Setup Go"
+        uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 #v3.3.0
+        with:
+          go-version: "${{ inputs.go_version }}"
+          check-latest: "${{ inputs.go_check_latest }}"
+          cache: "${{ inputs.go_cache }}"
+
+      - name: "Get Repository Name"
+        run: echo "REPOSITORY_NAME=${GITHUB_REPOSITORY#*/}" >> $GITHUB_ENV
+
+      - name: "Go Build"
+        run: |
+          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -o ${{ env.REPOSITORY_NAME }}-${{ matrix.goos }}_${{ matrix.goarch }}
+          sha256sum ${{ env.REPOSITORY_NAME }}-${{ matrix.goos }}_${{ matrix.goarch }} > ${{ env.REPOSITORY_NAME }}-${{ matrix.goos }}_${{ matrix.goarch }}.sha256sum.txt
+        working-directory: "${{ inputs.working_directory }}"
+
+      - name: "Release"
+        uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 #v0.1.15
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            ${{ inputs.working_directory }}/${{ env.REPOSITORY_NAME }}-${{ matrix.goos }}_${{ matrix.goarch }}
+            ${{ inputs.working_directory }}/${{ env.REPOSITORY_NAME }}-${{ matrix.goos }}_${{ matrix.goarch }}.sha256sum.txt

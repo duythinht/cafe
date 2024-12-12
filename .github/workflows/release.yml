@@ -1,0 +1,17 @@
+name: Release binary
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+
+jobs:
+  build:
+    uses: ./.github/workflows/build-template.yml
+    with:
+      go_version: '>=1.23.0'
+      go_check_latest: true
+      go_cache: true
+      working_directory: './cmd/cafe'
+    secrets: inherit
